@@ -221,7 +221,7 @@ function dense(pts,n=40){const out=[];for(let j=0;j<=n;j++)out.push(ll(along(pts
 // Zustand berechnen
 function state(t){
  const first=S[0],last=S[S.length-1];
- if(t<first.dep)return{kind:'before',ms:first.dep-t,i:0,stop:first,lat:first.lat,lon:first.lon,tz:first.tz};
+ if(t<first.dep){const today=ymd(VIE,new Date(t))===ymd(first.tz,new Date(first.dep));return today?{kind:'before',emb:true,ms:first.dep-t,i:0,stop:first,lat:first.lat,lon:first.lon,tz:first.tz}:{kind:'before',ms:first.dep-t,i:0,stop:first,lat:48.21,lon:16.37,tz:VIE}}
  if(t>=last.arr)return{kind:'after',stop:last,tz:last.tz,lat:last.lat,lon:last.lon,i:S.length-1};
  for(let i=0;i<S.length;i++){const s=S[i];
   if((s.arr==null||t>=s.arr)&&(s.dep==null||t<s.dep))return{kind:'port',i,stop:s,tz:s.tz,lat:s.lat,lon:s.lon};
@@ -240,7 +240,6 @@ const routeAll=[];for(let i=0;i<S.length-1;i++)routeAll.push(dense(legPts(i)));
  routeAll.forEach(r=>g.appendChild(el('path',{d:pathOf(r),class:'route'})));
  const dn=el('path',{class:'done'});g.appendChild(dn);
  S.forEach(s=>g.appendChild(el('circle',{cx:X(s.lon),cy:Y(s.lat),r:.7,class:'port'})));
- g.appendChild(el('circle',{r:1.3,class:'home hm'}));const ht=el('text',{class:'tl htx'});ht.textContent='Ihr';g.appendChild(ht);
  const dot=el('circle',{r:1.6,class:'dot'});g.appendChild(dot);const dt_=el('text',{class:'tl dtx'});g.appendChild(dt_);world.appendChild(g)});
 let zoomed=true,cur=null,big=false,span=120,cx=180,cy=90;
 const mapEl=()=>document.getElementById('map');
@@ -267,10 +266,9 @@ window.addEventListener('resize',()=>{if(big)draw()});
 function draw(){const map=document.getElementById('map');if(!cur)return;
  const done=[];for(let i=0;i<cur.i;i++)done.push(...routeAll[i]);
  if(cur.kind==='sea'){const pts=legPts(cur.i);for(let j=0;j<=30;j++)done.push(ll(along(pts,cur.f*j/30)))}
- const H=home(fixed??Date.now()),lab=cur.kind==='before'?'Eltern (Start)':cur.kind==='after'?'Eltern (zurück)':'Eltern';
+ const H=home(fixed??Date.now()),lab=cur.kind==='before'?(cur.emb?'Eltern (Einschiffung heute)':'Eltern (noch zu Hause)'):cur.kind==='after'?'Eltern (zurück)':'Eltern';
  world.querySelectorAll('g.mk').forEach(g=>{g.querySelector('.done').setAttribute('d',pathOf(done));const d=g.querySelector('.dot');d.setAttribute('cx',X(cur.lon));d.setAttribute('cy',Y(cur.lat));
-  const tx=g.querySelector('.dtx');tx.textContent=lab;tx.setAttribute('x',X(cur.lon)+2.2);tx.setAttribute('y',Y(cur.lat)+.8);
-  const hm=g.querySelector('.hm');hm.setAttribute('cx',X(H.lon));hm.setAttribute('cy',Y(H.lat));const ht=g.querySelector('.htx');ht.setAttribute('x',X(H.lon)+2);ht.setAttribute('y',Y(H.lat)-1.4)});
+  const tx=g.querySelector('.dtx');tx.textContent=lab;tx.setAttribute('x',X(cur.lon)+2.2);tx.setAttribute('y',Y(cur.lat)+.8);});
  if(big){const m=document.getElementById('map'),r=m.getBoundingClientRect(),h=span*(r.height/Math.max(1,r.width));cy=Math.max(h/2-10,Math.min(190-h/2,cy));map.setAttribute('viewBox',`${cx-span/2} ${cy-h/2} ${span} ${h}`);map.setAttribute('preserveAspectRatio','xMidYMid meet');return}
  if(zoomed){const w=70,h=35;map.setAttribute('viewBox',`${X(cur.lon)-w/2} ${Math.max(0,Math.min(180-h,Y(cur.lat)-h/2))} ${w} ${h}`)}
  else map.setAttribute('viewBox',`${X(cur.lon)-180} 0 360 180`);
@@ -296,12 +294,12 @@ function renderProg(st,t){const km=kmDoneAt(st),pc=Math.min(100,km/TOTKM*100),st
 let fixed=null;
 function render(){
  const t=fixed??Date.now(),now=new Date(t),st=state(t),box=document.getElementById('now');cur=st;
- const clocks=(tz,approx)=>`<div class="clocks"><div class="clock"><div class="lbl">Bei ihnen${approx?' (ca.)':''}</div><div class="t">${hm(tz,now)}</div><div class="d">${dtxt(tz,now)}</div></div><div class="clock"><div class="lbl">In Wien</div><div class="t">${hm(VIE,now)}</div><div class="d">${dtxt(VIE,now)}</div></div></div>`;
+ const clocks=(tz,approx)=>`<div class="clocks"><div class="clock"><div class="lbl">Bei ihnen${approx?' (ca.)':''}</div><div class="t">${hm(tz,now)}</div><div class="d">${dtxt(tz,now)}</div></div><div class="clock"><div class="lbl">Bei euch · ${home(t).name.split(" ·")[0]}</div><div class="t">${hm(VIE,now)}</div><div class="d">${dtxt(VIE,now)}</div></div></div>`;
  const diff=tz=>{const o=offH(tz,now);return o===0?'Gleiche Uhrzeit wie in Wien.':`Bei ihnen ist es ${Math.abs(o)} Std. ${o>0?'später':'früher'} als in Wien.`};
  const when=(ms,tz)=>`${dtxt(tz,new Date(ms))} um ${hm(tz,new Date(ms))} Uhr (Ortszeit)`;
  const inH=ms=>{const h=Math.round(ms/36e5);return h<1?'in weniger als 1 Std.':h<48?`in ca. ${h} Std.`:`in ca. ${Math.round(h/24)} Tagen`};
  let h='';
- if(st.kind==='before'){const d=Math.ceil(st.ms/864e5);h=`<div class="lbl">Noch nicht unterwegs</div><div class="where">Abfahrt ${d<=1?'heute/morgen':'in '+d+' Tagen'}</div><div class="info">Mittwoch, 25. November 2026, 18:00 Uhr ab Savona (Italien).</div>${clocks(VIE)}`}
+ if(st.kind==='before'){const d=Math.round((Date.parse(ymd(VIE,new Date(S[0].dep)))-Date.parse(ymd(VIE,now)))/864e5);h=`<div class="lbl">Noch nicht unterwegs</div><div class="where">${st.emb?'Heute Einschiffung in Savona':'Noch zu Hause · Abfahrt '+(d==1?'morgen':'in '+d+' Tagen')}</div><div class="info">Mittwoch, 25. November 2026, 18:00 Uhr ab Savona (Italien).</div>${clocks(st.tz)}`}
  else if(st.kind==='after'){h=`<div class="lbl">Reise beendet</div><div class="where">Wieder in Savona 🎉</div><div class="info">Angekommen am 12. April 2027.</div>${clocks(VIE)}`}
  else if(st.kind==='port'){const s=st.stop,nx=S[st.i+1];
   h=`<div class="lbl">⚓ Das Schiff liegt im Hafen</div><div class="where">${s.name}</div><div>${s.land}</div>${clocks(s.tz)}
