@@ -22,7 +22,8 @@ main{max-width:680px;margin:0 auto;padding:16px}h1{font-size:22px;margin:4px 0 1
 .info{margin-top:12px;font-size:16px}
 svg{width:100%;height:auto;display:block;border-radius:12px;background:var(--ocean)}
 .land{fill:var(--land)}.route{fill:none;stroke:var(--route);stroke-width:.35;stroke-dasharray:1 .8}.done{fill:none;stroke:var(--acc);stroke-width:.5}
-.port{fill:var(--card);stroke:var(--acc);stroke-width:.25}.dot{fill:var(--dot);stroke:#fff;stroke-width:.4}
+.port{fill:var(--card);stroke:var(--acc);stroke-width:.25}.home{fill:#2f9e5b;stroke:#fff;stroke-width:.35}
+.tl{font:600 2.4px sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--bg);stroke-width:.6px}.dot{fill:var(--dot);stroke:#fff;stroke-width:.4}
 .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 button,.btn{font:inherit;font-size:15px;background:var(--acc);color:var(--bg);border:0;border-radius:10px;padding:9px 13px;text-decoration:none;cursor:pointer}
 button.alt{background:var(--sea);color:var(--ink)}
@@ -220,7 +221,7 @@ function dense(pts,n=40){const out=[];for(let j=0;j<=n;j++)out.push(ll(along(pts
 // Zustand berechnen
 function state(t){
  const first=S[0],last=S[S.length-1];
- if(t<first.dep)return{kind:'before',ms:first.dep-t};
+ if(t<first.dep)return{kind:'before',ms:first.dep-t,i:0,stop:first,lat:first.lat,lon:first.lon,tz:first.tz};
  if(t>=last.arr)return{kind:'after',stop:last,tz:last.tz,lat:last.lat,lon:last.lon,i:S.length-1};
  for(let i=0;i<S.length;i++){const s=S[i];
   if((s.arr==null||t>=s.arr)&&(s.dep==null||t<s.dep))return{kind:'port',i,stop:s,tz:s.tz,lat:s.lat,lon:s.lon};
@@ -234,11 +235,13 @@ const world=document.getElementById('world');
 function el(n,a){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e}
 function pathOf(pts){let d='',px=null;for(const [la,lo] of pts){const x=X(lo),y=Y(la);d+=(px!==null&&Math.abs(x-px)<180?'L':'M')+x.toFixed(2)+','+y.toFixed(2);px=x}return d}
 const routeAll=[];for(let i=0;i<S.length-1;i++)routeAll.push(dense(legPts(i)));
-[-360,0,360].forEach(sh=>{const g=el('g',{transform:`translate(${sh},0)`});g.appendChild(el('path',{d:LAND,class:'land'}));
+[-360,0,360].forEach(sh=>{const g=el('g',{transform:`translate(${sh},0)`});g.appendChild(el('path',{d:LAND,class:'land'}));world.appendChild(g)});
+[-360,0,360].forEach(sh=>{const g=el('g',{transform:`translate(${sh},0)`,class:'mk'});
  routeAll.forEach(r=>g.appendChild(el('path',{d:pathOf(r),class:'route'})));
- const dn=el('path',{class:'done'});g.appendChild(dn);g.dataset.sh=sh;
+ const dn=el('path',{class:'done'});g.appendChild(dn);
  S.forEach(s=>g.appendChild(el('circle',{cx:X(s.lon),cy:Y(s.lat),r:.7,class:'port'})));
- const dot=el('circle',{r:1.6,class:'dot'});g.appendChild(dot);world.appendChild(g)});
+ g.appendChild(el('circle',{r:1.3,class:'home hm'}));const ht=el('text',{class:'tl htx'});ht.textContent='Ihr';g.appendChild(ht);
+ const dot=el('circle',{r:1.6,class:'dot'});g.appendChild(dot);const dt_=el('text',{class:'tl dtx'});g.appendChild(dt_);world.appendChild(g)});
 let zoomed=true,cur=null,big=false,span=120,cx=180,cy=90;
 const mapEl=()=>document.getElementById('map');
 function openBig(){if(big)return;big=true;const f=document.getElementById('full');f.hidden=false;document.getElementById('fullMap').appendChild(mapEl());
@@ -261,10 +264,13 @@ mapEl().addEventListener('pointermove',e=>{if(!big||!P.has(e.pointerId))return;c
 const up=e=>{P.delete(e.pointerId);if(P.size<2)pinch0=0};mapEl().addEventListener('pointerup',up);mapEl().addEventListener('pointercancel',up);
 mapEl().addEventListener('wheel',e=>{if(!big)return;e.preventDefault();zoomBy(e.deltaY>0?1.2:1/1.2)},{passive:false});
 window.addEventListener('resize',()=>{if(big)draw()});
-function draw(){const map=document.getElementById('map');if(!cur||cur.kind==='before'){map.setAttribute('viewBox','0 0 360 180');return}
+function draw(){const map=document.getElementById('map');if(!cur)return;
  const done=[];for(let i=0;i<cur.i;i++)done.push(...routeAll[i]);
  if(cur.kind==='sea'){const pts=legPts(cur.i);for(let j=0;j<=30;j++)done.push(ll(along(pts,cur.f*j/30)))}
- world.querySelectorAll('g').forEach(g=>{g.querySelector('.done').setAttribute('d',pathOf(done));const d=g.querySelector('.dot');d.setAttribute('cx',X(cur.lon));d.setAttribute('cy',Y(cur.lat))});
+ const H=home(fixed??Date.now()),lab=cur.kind==='before'?'Eltern (Start)':cur.kind==='after'?'Eltern (zurück)':'Eltern';
+ world.querySelectorAll('g.mk').forEach(g=>{g.querySelector('.done').setAttribute('d',pathOf(done));const d=g.querySelector('.dot');d.setAttribute('cx',X(cur.lon));d.setAttribute('cy',Y(cur.lat));
+  const tx=g.querySelector('.dtx');tx.textContent=lab;tx.setAttribute('x',X(cur.lon)+2.2);tx.setAttribute('y',Y(cur.lat)+.8);
+  const hm=g.querySelector('.hm');hm.setAttribute('cx',X(H.lon));hm.setAttribute('cy',Y(H.lat));const ht=g.querySelector('.htx');ht.setAttribute('x',X(H.lon)+2);ht.setAttribute('y',Y(H.lat)-1.4)});
  if(big){const m=document.getElementById('map'),r=m.getBoundingClientRect(),h=span*(r.height/Math.max(1,r.width));cy=Math.max(h/2-10,Math.min(190-h/2,cy));map.setAttribute('viewBox',`${cx-span/2} ${cy-h/2} ${span} ${h}`);map.setAttribute('preserveAspectRatio','xMidYMid meet');return}
  if(zoomed){const w=70,h=35;map.setAttribute('viewBox',`${X(cur.lon)-w/2} ${Math.max(0,Math.min(180-h,Y(cur.lat)-h/2))} ${w} ${h}`)}
  else map.setAttribute('viewBox',`${X(cur.lon)-180} 0 360 180`);
