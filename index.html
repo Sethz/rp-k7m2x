@@ -275,26 +275,38 @@ async function fetchWx(p){const u=`https://api.open-meteo.com/v1/forecast?latitu
  const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw 0;const j=await r.json();
  return{t:Math.round(j.current.temperature_2m),c:j.current.weather_code,w:Math.round(j.current.wind_speed_10m),mx:Math.round(j.daily.temperature_2m_max[0]),mn:Math.round(j.daily.temperature_2m_min[0]),at:Date.now()}}
 const ago=ms=>{const m=Math.round(ms/6e4);return m<2?'gerade eben':m<90?`vor ${m} Min.`:m<2880?`vor ${Math.round(m/60)} Std.`:`vor ${Math.round(m/1440)} Tagen`};
-function box(title,sub,w,note){let h=`<div class="pl">${title}</div>${sub?`<div class="lbl" style="font-size:13px">${sub}</div>`:''}`;
+function box(title,sub,w,day,dayLbl,note,extra){let h=`<div class="pl">${title}</div>${sub?`<div class="lbl" style="font-size:13px">${sub}</div>`:''}`;
  if(w){const [ic,tx]=WMO(w.c);h+=`<div><span class="ico">${ic}</span> <span class="big">${w.t}°</span></div><div style="font-size:15px">${tx} · heute ${w.mn}° bis ${w.mx}°</div><div class="lbl" style="font-size:13px">${Date.now()-w.at<36e5*2?'live':'Stand '+ago(Date.now()-w.at)}</div>`}
- else h+=`<div class="lbl" style="font-size:15px;margin-top:6px">Kein aktuelles Wetter (offline)</div>`;
- if(note)h+=`<div style="font-size:14px;margin-top:6px">📝 Laut Reiseplan-Notiz: ${note} °C</div>`;return h}
-let wxBusy=false;
+ else if(day){const [ic,tx]=WMO(day.c);h+=`<div><span class="ico">${ic}</span> <span class="big">${day.mn}–${day.mx}°</span></div><div style="font-size:15px">${tx}</div><div class="lbl" style="font-size:13px">${dayLbl}</div>`}
+ else h+=`<div class="lbl" style="font-size:15px;margin-top:6px">Noch keine Vorhersage gespeichert</div>`;
+ if(note&&!w&&!day)h+=`<div style="font-size:14px;margin-top:6px">📝 Laut Reiseplan-Notiz: ${note} °C</div>`;
+ if(extra)h+=extra;return h}
+let wxBusy=false,FC=null;
+async function loadFc(){try{const r=await fetch('weather.json',{cache:'no-store'});if(r.ok){const j=await r.json();if(j.generated){FC=j;store('fc',j)}}}catch(e){}if(!FC)FC=load('fc')}
+const dm=d=>`${+d.slice(8)}.${+d.slice(5,7)}.`;
+function fcLbl(){return FC&&FC.generated?`Vorhersage, Stand ${ago(Date.now()-FC.generated)}`:''}
 async function weather(){if(wxBusy)return;wxBusy=true;
- const t=fixed??Date.now(),st=state(t),hm_=home(t);
- let ship=null,note=null,title='Bei den Eltern',sub='';
+ if(!FC)await loadFc();
+ const t=fixed??Date.now(),now=new Date(t),st=state(t),hm_=home(t),live=fixed===null;
+ let ship=null,note=null,sub='',pday=null,extra='';
  if(st.kind==='port'||st.kind==='sea'){ship={lat:st.lat,lon:st.lon};
-  if(st.kind==='port'){sub=st.stop.name;note=NOTE[st.stop.key]}else{sub=`auf See vor ${st.f<.5?st.stop.name:st.next.name}`;note=st.f>=.5?NOTE[st.next.key]:null}}
+  if(st.kind==='port'){sub=st.stop.name;note=NOTE[st.stop.key];pday=FC&&FC.ports[st.stop.key+'|'+ymd(st.stop.tz,now)]}
+  else{sub=`auf See (zwischen ${st.stop.name} und ${st.next.name})`;note=st.f>=.5?NOTE[st.next.key]:null}
+  // nächster Hafen
+  const nx=st.kind==='sea'?st.next:S[st.i+1];
+  if(nx&&nx.arr){const d=ymd(nx.tz,new Date(nx.arr)),f=FC&&FC.ports[nx.key+'|'+d];
+   extra=`<div style="font-size:14px;margin-top:8px;border-top:1px solid var(--line);padding-top:6px">Nächster Hafen <b>${nx.name}</b> am ${dm(d)}<br>`+(f?`${WMO(f.c)[0]} ${f.mn}–${f.mx}° · ${WMO(f.c)[1]}`:(NOTE[nx.key]?`📝 Notiz: ${NOTE[nx.key]} °C`:'noch keine Vorhersage'))+`</div>`}}
+ const hday=FC&&FC.home[hm_.name]&&FC.home[hm_.name][ymd(VIE,now)];
  const kS='wx:ship:'+(ship?ship.lat.toFixed(0)+','+ship.lon.toFixed(0):''),kH='wx:'+hm_.name;
- let ws=ship?load(kS):null,wh=load(kH);const live=fixed===null;
- const paint=()=>{document.getElementById('wx').innerHTML=(ship?`<div>${box(title,sub,ws,note)}</div>`:'')+`<div>${box('Bei euch',hm_.name+(hm_.sub?' · '+hm_.sub:''),wh)}</div>`;
-  document.getElementById('wxnote').textContent=live?'Aktuelles Wetter nur mit Internet (Open-Meteo); ohne Internet wird der letzte Stand angezeigt.':'Beim ausprobierten Datum gibt es nur die Notiz-Werte, kein Wetter.'};
- if(!live){ws=null;wh=null}
+ let ws=live&&ship?load(kS):null,wh=live?load(kH):null;
+ if(ws&&Date.now()-ws.at>6*36e5)ws=null; if(wh&&Date.now()-wh.at>6*36e5)wh=null; // alte Live-Werte -> lieber Vorhersage
+ const paint=()=>{document.getElementById('wx').innerHTML=(ship?`<div>${box('Bei den Eltern',sub,ws,pday,fcLbl(),note,extra)}</div>`:'')+`<div>${box('Bei euch',hm_.name+(hm_.sub?' · '+hm_.sub:''),wh,hday,fcLbl())}</div>`;
+  document.getElementById('wxnote').textContent=(live?'Mit Internet: aktuelles Wetter. Ohne Internet: zuletzt gespeicherte 16-Tage-Vorhersage. ':'')+'Quelle: Open-Meteo.'};
  paint();
- if(live&&navigator.onLine!==false){try{if(ship&&(!ws||Date.now()-ws.at>9e5)){ws=await fetchWx(ship);store(kS,ws)}}catch(e){}
+ if(live&&navigator.onLine!==false){loadFc().then(paint);
+  try{if(ship&&(!ws||Date.now()-ws.at>9e5)){ws=await fetchWx(ship);store(kS,ws)}}catch(e){}
   try{if(!wh||Date.now()-wh.at>9e5){wh=await fetchWx(hm_);store(kH,wh)}}catch(e){}paint()}
  wxBusy=false}
-
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 render();weather();setInterval(()=>{if(fixed===null)render()},30000);setInterval(()=>{if(fixed===null)weather()},6e5);window.addEventListener('online',weather);
 </script></body></html>
