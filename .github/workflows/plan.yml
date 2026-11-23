@@ -16,22 +16,40 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: python scripts/check_plan.py
+      - name: Plan vergleichen
+        run: python scripts/check_plan.py 2>&1 | tee check.log || true
       - name: Issue bei Änderung
         if: hashFiles('plan_diff.md') != ''
+        continue-on-error: true
         env: { GH_TOKEN: "${{ github.token }}" }
+        shell: bash
         run: |
+          set +e
           TITLE="Reiseplan-Änderung erkannt"
-          N=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number')
+          N=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number' 2>>issue.log)
           if [ -n "$N" ]; then
-            OLD=$(gh issue view "$N" --json body --jq .body)
-            [ "$OLD" != "$(cat plan_diff.md)" ] && gh issue edit "$N" --body-file plan_diff.md && gh issue comment "$N" --body "Abweichungen haben sich geändert (Stand $(date -u +%d.%m.%Y))."
+            OLD=$(gh issue view "$N" --json body --jq .body 2>>issue.log)
+            if [ "$OLD" != "$(cat plan_diff.md)" ]; then
+              gh issue edit "$N" --body-file plan_diff.md >>issue.log 2>&1
+              gh issue comment "$N" --body "Abweichungen haben sich geändert (Stand $(date -u +%d.%m.%Y))." >>issue.log 2>&1
+            fi
           else
-            gh issue create --title "$TITLE" --body-file plan_diff.md
+            gh issue create --title "$TITLE" --body-file plan_diff.md >>issue.log 2>&1
           fi
+          echo "exit=$?" >>issue.log
       - name: Prüfstatus speichern
+        if: always()
+        shell: bash
         run: |
-          rm -f plan_diff.md
+          python3 - << 'PY'
+          import json, os
+          s = json.load(open("plan_check.json")) if os.path.exists("plan_check.json") else {"result": "Skript hat keinen Status geschrieben"}
+          for f in ("check.log", "issue.log"):
+              if os.path.exists(f): s[f] = open(f).read()[-1500:]
+          json.dump(s, open("plan_check.json", "w"), ensure_ascii=False, indent=1)
+          PY
+          rm -f plan_diff.md check.log issue.log
           git config user.name "plan-bot"; git config user.email "plan-bot@users.noreply.github.com"
           git add plan_check.json
-          git diff --cached --quiet || (git commit -m "Reiseplan geprüft" && git pull --rebase -q && git push)
+          git diff --cached --quiet || git commit -m "Reiseplan geprüft"
+          for i in 1 2 3; do git pull --rebase -q && git push && break; sleep 5; done
