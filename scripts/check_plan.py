@@ -29,10 +29,12 @@ try:
         rest = rest[times.end():]
         name = next((k for k in known if rest.startswith(k)), None)
         if name is None:
+            if not (a or b):   # kein Zeitstempel -> kein Eintrag im Tagesplan (z. B. Navigationsleiste)
+                continue
             name = "NEU: " + " ".join(rest.split()[:3])
         if name == "Navigation": continue
         d = dt.date(int(m.group(4)), MON[m.group(3)], int(m.group(2))).isoformat()
-        if d in found: continue
+        if d in found and not found[d]["port"].startswith("NEU"): continue
         found[d] = {"date": d, "port": name, "arr": h24(a), "dep": h24(b)}
     status["parsed_ports"] = len(found)
     if len(found) < 40:
@@ -46,6 +48,7 @@ try:
             if not a or not b or a["port"] != b["port"] or a["arr"] != b["arr"] or a["dep"] != b["dep"]:
                 diffs.append(f"| {d} | {fmt(a)} | {fmt(b)} |")
         status["result"] = "unverändert" if not diffs else f"{len(diffs)} Abweichung(en)"
+        status["diffs"] = diffs
         if diffs:
             open("plan_diff.md", "w").write(
                 "Die Automatik hat Abweichungen zwischen dem Reiseplan in der App und dem veröffentlichten Plan gefunden.\n\n"
