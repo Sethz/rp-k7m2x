@@ -221,7 +221,7 @@ function dense(pts,n=40){const out=[];for(let j=0;j<=n;j++)out.push(ll(along(pts
 // Zustand berechnen
 function state(t){
  const first=S[0],last=S[S.length-1];
- if(t<first.dep){const today=ymd(VIE,new Date(t))===ymd(first.tz,new Date(first.dep));return today?{kind:'before',emb:true,ms:first.dep-t,i:0,stop:first,lat:first.lat,lon:first.lon,tz:first.tz}:{kind:'before',ms:first.dep-t,i:0,stop:first,lat:48.21,lon:16.37,tz:VIE}}
+ if(t<first.dep){const today=ymd(VIE,new Date(t))===ymd(first.tz,new Date(first.dep));return today?{kind:'before',emb:true,ms:first.dep-t,i:0,stop:first,lat:first.lat,lon:first.lon,tz:first.tz}:{kind:'before',ms:first.dep-t,i:0,stop:first,lat:first.lat,lon:first.lon,tz:VIE}}
  if(t>=last.arr)return{kind:'after',stop:last,tz:last.tz,lat:last.lat,lon:last.lon,i:S.length-1};
  for(let i=0;i<S.length;i++){const s=S[i];
   if((s.arr==null||t>=s.arr)&&(s.dep==null||t<s.dep))return{kind:'port',i,stop:s,tz:s.tz,lat:s.lat,lon:s.lon};
@@ -268,7 +268,8 @@ function draw(){const map=document.getElementById('map');if(!cur)return;
  if(cur.kind==='sea'){const pts=legPts(cur.i);for(let j=0;j<=30;j++)done.push(ll(along(pts,cur.f*j/30)))}
  const H=home(fixed??Date.now()),lab=cur.kind==='before'?(cur.emb?'Eltern (Einschiffung heute)':'Eltern (noch zu Hause)'):cur.kind==='after'?'Eltern (zurück)':'Eltern';
  world.querySelectorAll('g.mk').forEach(g=>{g.querySelector('.done').setAttribute('d',pathOf(done));const d=g.querySelector('.dot');d.setAttribute('cx',X(cur.lon));d.setAttribute('cy',Y(cur.lat));
-  const tx=g.querySelector('.dtx');tx.textContent=lab;tx.setAttribute('x',X(cur.lon)+2.2);tx.setAttribute('y',Y(cur.lat)+.8);});
+  const hide=cur.kind==='before';d.style.display=hide?'none':'';
+  const tx=g.querySelector('.dtx');tx.style.display=hide?'none':'';tx.textContent=lab;tx.setAttribute('x',X(cur.lon)+2.2);tx.setAttribute('y',Y(cur.lat)+.8);});
  if(big){const m=document.getElementById('map'),r=m.getBoundingClientRect(),h=span*(r.height/Math.max(1,r.width));cy=Math.max(h/2-10,Math.min(190-h/2,cy));map.setAttribute('viewBox',`${cx-span/2} ${cy-h/2} ${span} ${h}`);map.setAttribute('preserveAspectRatio','xMidYMid meet');return}
  if(zoomed){const w=70,h=35;map.setAttribute('viewBox',`${X(cur.lon)-w/2} ${Math.max(0,Math.min(180-h,Y(cur.lat)-h/2))} ${w} ${h}`)}
  else map.setAttribute('viewBox',`${X(cur.lon)-180} 0 360 180`);
@@ -309,7 +310,7 @@ function render(){
   <div class="bar"><i style="width:${pc}%"></i></div><div class="lbl">${pc} % geschafft · noch ca. <b>${fmtN(NM(st.km))} Seemeilen</b> (${fmtN(st.km)} km) von ${fmtN(NM(st.totkm))} sm</div>
   ${clocks(st.tz,st.approx)}<div class="info">⏱ ${diff(st.tz)}${st.approx?' (An Seetagen stellt das Schiff die Uhr schrittweise um.)':''}<br>⚓ Ankunft in <b>${n.name}</b> (${n.land}): ${when(n.arr,n.tz)} – ${inH(n.arr-t)}<br><span class="lbl">Dafür nötig: ca. ${Math.round(NM(st.km)/Math.max(.5,(n.arr-t)/36e5))} Knoten im Schnitt · Ungefähre Position: ${Math.abs(st.lat).toFixed(1)}° ${st.lat>=0?'N':'S'}, ${Math.abs(st.lon).toFixed(1)}° ${st.lon>=0?'O':'W'}</span></div>`}
  box.innerHTML=h;renderProg(st,t);
- document.getElementById('maplbl').textContent=fixed?'Position zum gewählten Zeitpunkt (laut Plan)':'Ungefähre Position jetzt (laut Reiseplan)';
+ document.getElementById('maplbl').textContent=st.kind==='before'?'Reiseroute – der Punkt erscheint ab Abfahrt (25.11., 18:00)':fixed?'Position zum gewählten Zeitpunkt (laut Plan)':'Ungefähre Position jetzt (laut Reiseplan)';
  document.querySelectorAll('tr.today').forEach(r=>r.classList.remove('today'));
  if(st.tz){const r=document.getElementById('d'+ymd(st.tz,now));if(r)r.classList.add('today')}
  draw();
