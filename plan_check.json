@@ -1,0 +1,8 @@
+{
+ "checked": "2026-11-23T23:27+00:00",
+ "source": "https://www.taoticket.com/en_AU/co/costa-cruises/croc/3/SVND8A03",
+ "parsed_ports": 58,
+ "result": "1 Abweichung(en)",
+ "check.log": "{'checked': '2026-11-23T23:27+00:00', 'source': 'https://www.taoticket.com/en_AU/co/costa-cruises/croc/3/SVND8A03', 'parsed_ports': 58, 'result': '1 Abweichung(en)'}\n",
+ "issue.log": "the 'Sethz/rp-k7m2x' repository has disabled issues\nthe 'Sethz/rp-k7m2x' repository has disabled issues\nexit=1\n"
+}
