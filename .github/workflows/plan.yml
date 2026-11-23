@@ -1,0 +1,37 @@
+name: Reiseplan prüfen
+on:
+  schedule:
+    - cron: "43 5 * * *"   # täglich ca. 6:43 Uhr Wiener Zeit
+  workflow_dispatch:
+  push:
+    paths: ["plan.json", "scripts/check_plan.py", ".github/workflows/plan.yml"]
+permissions:
+  contents: write
+  issues: write
+concurrency: plan
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python scripts/check_plan.py
+      - name: Issue bei Änderung
+        if: hashFiles('plan_diff.md') != ''
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          TITLE="Reiseplan-Änderung erkannt"
+          N=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number')
+          if [ -n "$N" ]; then
+            OLD=$(gh issue view "$N" --json body --jq .body)
+            [ "$OLD" != "$(cat plan_diff.md)" ] && gh issue edit "$N" --body-file plan_diff.md && gh issue comment "$N" --body "Abweichungen haben sich geändert (Stand $(date -u +%d.%m.%Y))."
+          else
+            gh issue create --title "$TITLE" --body-file plan_diff.md
+          fi
+      - name: Prüfstatus speichern
+        run: |
+          rm -f plan_diff.md
+          git config user.name "plan-bot"; git config user.email "plan-bot@users.noreply.github.com"
+          git add plan_check.json
+          git diff --cached --quiet || (git commit -m "Reiseplan geprüft" && git pull --rebase -q && git push)

@@ -1,0 +1,350 @@
+[
+ {
+  "date": "2026-11-25",
+  "port": "Savona",
+  "arr": null,
+  "dep": "18:00"
+ },
+ {
+  "date": "2026-11-26",
+  "port": "Marseille",
+  "arr": "09:00",
+  "dep": "18:00"
+ },
+ {
+  "date": "2026-11-27",
+  "port": "Barcelona",
+  "arr": "07:00",
+  "dep": "13:00"
+ },
+ {
+  "date": "2026-11-29",
+  "port": "Lisbon",
+  "arr": "14:00",
+  "dep": "21:00"
+ },
+ {
+  "date": "2026-12-02",
+  "port": "Ponta Delgada",
+  "arr": "09:00",
+  "dep": "19:00"
+ },
+ {
+  "date": "2026-12-03",
+  "port": "Praia da Vitória",
+  "arr": "08:00",
+  "dep": "18:00"
+ },
+ {
+  "date": "2026-12-09",
+  "port": "New York",
+  "arr": "08:00",
+  "dep": null
+ },
+ {
+  "date": "2026-12-10",
+  "port": "New York",
+  "arr": null,
+  "dep": "18:00"
+ },
+ {
+  "date": "2026-12-13",
+  "port": "Fort Lauderdale",
+  "arr": "08:00",
+  "dep": null
+ },
+ {
+  "date": "2026-12-14",
+  "port": "Fort Lauderdale",
+  "arr": null,
+  "dep": "16:00"
+ },
+ {
+  "date": "2026-12-15",
+  "port": "Half Moon Cay",
+  "arr": "09:00",
+  "dep": "17:00"
+ },
+ {
+  "date": "2026-12-19",
+  "port": "Cristobal",
+  "arr": "08:00",
+  "dep": "20:00"
+ },
+ {
+  "date": "2026-12-22",
+  "port": "Puntarenas",
+  "arr": "08:00",
+  "dep": "20:00"
+ },
+ {
+  "date": "2026-12-24",
+  "port": "Puerto Quetzal",
+  "arr": "08:00",
+  "dep": "20:00"
+ },
+ {
+  "date": "2026-12-27",
+  "port": "Puerto Vallarta",
+  "arr": "07:00",
+  "dep": "16:00"
+ },
+ {
+  "date": "2026-12-28",
+  "port": "Cabo San Lucas",
+  "arr": "09:00",
+  "dep": "16:00"
+ },
+ {
+  "date": "2026-12-30",
+  "port": "San Diego",
+  "arr": "10:00",
+  "dep": "20:00"
+ },
+ {
+  "date": "2026-12-31",
+  "port": "Los Angeles",
+  "arr": "08:00",
+  "dep": null
+ },
+ {
+  "date": "2027-01-01",
+  "port": "Los Angeles",
+  "arr": null,
+  "dep": "20:00"
+ },
+ {
+  "date": "2027-01-03",
+  "port": "San Francisco",
+  "arr": "06:00",
+  "dep": null
+ },
+ {
+  "date": "2027-01-04",
+  "port": "San Francisco",
+  "arr": null,
+  "dep": "18:00"
+ },
+ {
+  "date": "2027-01-10",
+  "port": "Honolulu",
+  "arr": "08:00",
+  "dep": "18:00"
+ },
+ {
+  "date": "2027-01-11",
+  "port": "Hilo",
+  "arr": "09:00",
+  "dep": "19:00"
+ },
+ {
+  "date": "2027-01-17",
+  "port": "Papeete",
+  "arr": "09:00",
+  "dep": "19:00"
+ },
+ {
+  "date": "2027-01-23",
+  "port": "Suva",
+  "arr": "08:00",
+  "dep": "18:00"
+ },
+ {
+  "date": "2027-01-25",
+  "port": "Lifou",
+  "arr": "09:00",
+  "dep": "19:00"
+ },
+ {
+  "date": "2027-01-26",
+  "port": "Noumea",
+  "arr": "07:00",
+  "dep": "16:00"
+ },
+ {
+  "date": "2027-01-29",
+  "port": "Sydney",
+  "arr": "06:30",
+  "dep": null
+ },
+ {
+  "date": "2027-01-30",
+  "port": "Sydney",
+  "arr": null,
+  "dep": "18:00"
+ },
+ {
+  "date": "2027-01-31",
+  "port": "Newcastle",
+  "arr": "08:00",
+  "dep": "18:00"
+ },
+ {
+  "date": "2027-02-04",
+  "port": "Cairns",
+  "arr": "07:00",
+  "dep": "18:00"
+ },
+ {
+  "date": "2027-02-07",
+  "port": "Rabaul",
+  "arr": "08:00",
+  "dep": "16:00"
+ },
+ {
+  "date": "2027-02-13",
+  "port": "Tokyo",
+  "arr": "13:30",
+  "dep": null
+ },
+ {
+  "date": "2027-02-14",
+  "port": "Tokyo",
+  "arr": null,
+  "dep": "20:30"
+ },
+ {
+  "date": "2027-02-16",
+  "port": "Kobe",
+  "arr": "08:00",
+  "dep": "18:00"
+ },
+ {
+  "date": "2027-02-18",
+  "port": "Nagasaki",
+  "arr": "08:00",
+  "dep": "18:00"
+ },
+ {
+  "date": "2027-02-19",
+  "port": "Busan",
+  "arr": "07:00",
+  "dep": "16:00"
+ },
+ {
+  "date": "2027-02-21",
+  "port": "Keelung",
+  "arr": "10:00",
+  "dep": "20:00"
+ },
+ {
+  "date": "2027-02-23",
+  "port": "Hong Kong",
+  "arr": "07:00",
+  "dep": null
+ },
+ {
+  "date": "2027-02-24",
+  "port": "Hong Kong",
+  "arr": null,
+  "dep": "17:00"
+ },
+ {
+  "date": "2027-02-26",
+  "port": "Nha Trang",
+  "arr": "10:00",
+  "dep": "20:00"
+ },
+ {
+  "date": "2027-02-28",
+  "port": "Phu My",
+  "arr": "08:00",
+  "dep": "18:00"
+ },
+ {
+  "date": "2027-03-02",
+  "port": "Ko Samui",
+  "arr": "08:00",
+  "dep": "17:00"
+ },
+ {
+  "date": "2027-03-04",
+  "port": "Singapore",
+  "arr": "08:00",
+  "dep": "17:00"
+ },
+ {
+  "date": "2027-03-05",
+  "port": "Port Klang",
+  "arr": "07:00",
+  "dep": "17:00"
+ },
+ {
+  "date": "2027-03-06",
+  "port": "Penang",
+  "arr": "07:00",
+  "dep": "13:00"
+ },
+ {
+  "date": "2027-03-09",
+  "port": "Colombo",
+  "arr": "10:00",
+  "dep": "19:00"
+ },
+ {
+  "date": "2027-03-11",
+  "port": "Male",
+  "arr": "08:00",
+  "dep": "18:00"
+ },
+ {
+  "date": "2027-03-16",
+  "port": "Port Louis",
+  "arr": "08:00",
+  "dep": "17:00"
+ },
+ {
+  "date": "2027-03-20",
+  "port": "Durban",
+  "arr": "08:00",
+  "dep": "20:00"
+ },
+ {
+  "date": "2027-03-22",
+  "port": "Port Elizabeth",
+  "arr": "06:00",
+  "dep": "18:30"
+ },
+ {
+  "date": "2027-03-24",
+  "port": "Cape Town",
+  "arr": "07:00",
+  "dep": "20:00"
+ },
+ {
+  "date": "2027-03-27",
+  "port": "Walvis Bay",
+  "arr": "07:00",
+  "dep": "18:00"
+ },
+ {
+  "date": "2027-04-04",
+  "port": "Mindelo",
+  "arr": "09:00",
+  "dep": "19:00"
+ },
+ {
+  "date": "2027-04-07",
+  "port": "Las Palmas",
+  "arr": "07:00",
+  "dep": "15:00"
+ },
+ {
+  "date": "2027-04-10",
+  "port": "Barcelona",
+  "arr": "14:00",
+  "dep": "20:00"
+ },
+ {
+  "date": "2027-04-11",
+  "port": "Marseille",
+  "arr": "09:00",
+  "dep": "18:00"
+ },
+ {
+  "date": "2027-04-12",
+  "port": "Savona",
+  "arr": "08:00",
+  "dep": null
+ }
+]
