@@ -37,14 +37,21 @@ tr.s td{background:var(--sea)}tr.today td{background:var(--hi)!important}.foot{f
 .full{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;gap:8px;padding:10px}
 .full svg{flex:1;min-height:0;height:100%;cursor:grab;touch-action:none}.full .tb{display:flex;gap:8px;align-items:center}
 .full .tb button{font-size:20px;min-width:48px}.full .tb .sp{flex:1}.hint{font-size:13px;color:var(--mute);margin-top:6px}
+.pbar{position:relative;height:16px;background:var(--line);border-radius:8px;margin:14px 0 22px}
+.pbar i{position:absolute;left:0;top:0;bottom:0;background:var(--acc);border-radius:8px}
+.pbar b{position:absolute;top:-9px;font-size:22px;transform:translateX(-50%)}
+.pbar u{position:absolute;top:18px;font-size:11px;color:var(--mute);text-decoration:none;transform:translateX(-50%);white-space:nowrap}
+.stats{display:flex;gap:10px;flex-wrap:wrap}.stats div{flex:1;min-width:0;background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+.stats .n{font-size:22px;font-weight:700}.stats .lbl{font-size:13px}
+@media (max-width:520px){.pbar u.o{display:none}.stats{gap:6px}.stats div{padding:8px 4px}.stats .n{font-size:19px}}
 </style></head><body><main>
 <h1>🚢 Reiseplan</h1>
 <div class="card" id="now"><div class="where">Reiseplan: Bitte unten das heutige Datum suchen</div><div class="lbl">(Die automatische Anzeige braucht einen Browser mit JavaScript.)</div></div>
+<div class="card" id="prog"></div>
 <div class="card"><div class="lbl">🌤 Wetter</div><div class="wx" id="wx"></div><div class="lbl" id="wxnote" style="margin-top:8px;font-size:13px"></div></div>
 <div class="card"><div class="lbl" id="maplbl">Ungefähre Position laut Reiseplan</div>
 <div id="mapHome"><svg id="map" viewBox="0 0 360 180"><g id="world"></g></svg></div><div class="hint">👆 Auf die Karte tippen zum Vergrößern</div>
-<div class="btns"><button class="alt" id="zoomBtn">Ganze Welt zeigen</button>
-<a class="btn" href="https://www.vesselfinder.com/de/vessels/details/9398917" target="_blank" rel="noopener">Echte Live-Position (mit Internet)</a></div>
+<div class="btns"><button id="bigBtn">🔍 Karte groß öffnen</button></div><p style="margin:12px 0 0;font-size:15px"><a href="https://www.vesselfinder.com/de/vessels/details/9398917" target="_blank" rel="noopener" style="color:var(--acc)">📡 Echte Live-Position des Schiffs ansehen ↗</a><br><span class="lbl" style="font-size:13px">Öffnet die externe Seite VesselFinder, nur mit Internet. Die Karte hier oben ist eine Schätzung aus dem Reiseplan.</span></p>
 <details id="test"><summary>Anderes Datum ausprobieren</summary><p>Wo sind sie am …? <input type="datetime-local" id="tin"> <button class="alt" id="tnow">Jetzt</button></p><p class="lbl">Uhrzeit hier = Wiener Zeit.</p></details>
 </div>
 <table><thead><tr><th>Datum</th><th>Wo?</th><th>Im Hafen<br>(Ortszeit)</th><th>Uhr dort<br>vs. Wien</th></tr></thead><tbody>
@@ -238,7 +245,7 @@ function openBig(){if(big)return;big=true;const f=document.getElementById('full'
  if(cur&&cur.lat!=null){cx=X(cur.lon);cy=Y(cur.lat);span=60}else{cx=180;cy=90;span=360}document.body.style.overflow='hidden';draw()}
 function closeBig(){big=false;document.getElementById('full').hidden=true;document.getElementById('mapHome').appendChild(mapEl());document.body.style.overflow='';draw()}
 const zoomBy=k=>{span=Math.max(4,Math.min(360,span*k));draw()};
-document.getElementById('zoomBtn').onclick=()=>{zoomed=!zoomed;draw()};
+document.getElementById('bigBtn').onclick=openBig;
 mapEl().addEventListener('click',()=>{if(!big)openBig()});
 document.getElementById('zClose').onclick=closeBig;document.getElementById('zIn').onclick=()=>zoomBy(1/1.6);document.getElementById('zOut').onclick=()=>zoomBy(1.6);
 document.getElementById('zDot').onclick=()=>{if(cur&&cur.lat!=null){cx=X(cur.lon);cy=Y(cur.lat);draw()}};
@@ -259,7 +266,24 @@ function draw(){const map=document.getElementById('map');if(!cur||cur.kind==='be
  if(big){const m=document.getElementById('map'),r=m.getBoundingClientRect(),h=span*(r.height/Math.max(1,r.width));cy=Math.max(h/2-10,Math.min(190-h/2,cy));map.setAttribute('viewBox',`${cx-span/2} ${cy-h/2} ${span} ${h}`);map.setAttribute('preserveAspectRatio','xMidYMid meet');return}
  if(zoomed){const w=70,h=35;map.setAttribute('viewBox',`${X(cur.lon)-w/2} ${Math.max(0,Math.min(180-h,Y(cur.lat)-h/2))} ${w} ${h}`)}
  else map.setAttribute('viewBox',`${X(cur.lon)-180} 0 360 180`);
- document.getElementById('zoomBtn').textContent=zoomed?'Ganze Welt zeigen':'Näher heranzoomen';}
+}
+
+// ---------- Reisefortschritt ----------
+const LEGKM=[];for(let i=0;i<S.length-1;i++)LEGKM.push(legLen(legPts(i))*EARTH);
+const TOTKM=LEGKM.reduce((a,b)=>a+b,0),NM=km=>Math.round(km/1.852);
+const fmtN=n=>n.toLocaleString('de-AT');
+const MARKS=[["Savona",0],["New York",6],["Hawaii",17],["Sydney",23],["Tokio",27],["Singapur",36],["Kapstadt",44],["Savona",S.length-1]];
+function kmDoneAt(st){if(st.kind==='before')return 0;if(st.kind==='after')return TOTKM;let s=0;for(let i=0;i<st.i;i++)s+=LEGKM[i];if(st.kind==='sea')s+=st.f*LEGKM[st.i];return s}
+function renderProg(st,t){const km=kmDoneAt(st),pc=Math.min(100,km/TOTKM*100),startD=Date.UTC(2026,10,25),
+ dnum=Math.floor((Date.parse(ymd(VIE,new Date(t)))-startD)/864e5)+1,tot=139;
+ let kmAt=i=>{let s=0;for(let k=0;k<i;k++)s+=LEGKM[k];return s};
+ const ticks=MARKS.map(([n,i],k)=>`<u class="${['Hawaii','Tokio','Kapstadt'].includes(n)?'':'o'}" style="left:${kmAt(i)/TOTKM*100}%;${k==0?'transform:none':k==MARKS.length-1?'transform:translateX(-100%)':''}">${n}</u>`).join('');
+ const ports=S.filter((s,i)=>i>0&&s.arr&&s.arr<=t).length,ptot=S.length-1;
+ document.getElementById('prog').innerHTML=`<div class="lbl">🧭 Reisefortschritt gesamt</div><div class="where">${pc.toLocaleString('de-AT',{maximumFractionDigits:pc<10?1:0})} %</div>
+ <div class="pbar"><i style="width:${pc}%"></i><b style="left:${pc}%">🚢</b>${ticks}</div>
+ <div class="stats"><div><div class="n">${st.kind==='before'?'–':Math.max(1,Math.min(tot,dnum))}</div><div class="lbl">Reisetag von ${tot}</div></div>
+ <div><div class="n">${fmtN(NM(km))}</div><div class="lbl">Seemeilen gefahren<br>von ca. ${fmtN(NM(TOTKM))}</div></div>
+ <div><div class="n">${ports}</div><div class="lbl">Häfen erreicht<br>von ${ptot}</div></div></div>`}
 // Anzeige
 let fixed=null;
 function render(){
@@ -276,9 +300,9 @@ function render(){
   <div class="info">⏱ ${diff(s.tz)}<br>🚢 Abfahrt ${when(s.dep,s.tz)} – ${inH(s.dep-t)}${nx?`<br>➡️ Danach: <b>${nx.name}</b> (${nx.land})`:''}</div>`}
  else{const s=st.stop,n=st.next,pc=Math.round(st.f*100);
   h=`<div class="lbl">🌊 Auf See</div><div class="where">zwischen ${s.name} und ${n.name}</div>
-  <div class="bar"><i style="width:${pc}%"></i></div><div class="lbl">${pc} % geschafft · noch ca. ${st.km.toLocaleString('de-AT')} km von ${st.totkm.toLocaleString('de-AT')} km</div>
-  ${clocks(st.tz,st.approx)}<div class="info">⏱ ${diff(st.tz)}${st.approx?' (An Seetagen stellt das Schiff die Uhr schrittweise um.)':''}<br>⚓ Ankunft in <b>${n.name}</b> (${n.land}): ${when(n.arr,n.tz)} – ${inH(n.arr-t)}<br><span class="lbl">Ungefähre Position: ${Math.abs(st.lat).toFixed(1)}° ${st.lat>=0?'N':'S'}, ${Math.abs(st.lon).toFixed(1)}° ${st.lon>=0?'O':'W'}</span></div>`}
- box.innerHTML=h;
+  <div class="bar"><i style="width:${pc}%"></i></div><div class="lbl">${pc} % geschafft · noch ca. <b>${fmtN(NM(st.km))} Seemeilen</b> (${fmtN(st.km)} km) von ${fmtN(NM(st.totkm))} sm</div>
+  ${clocks(st.tz,st.approx)}<div class="info">⏱ ${diff(st.tz)}${st.approx?' (An Seetagen stellt das Schiff die Uhr schrittweise um.)':''}<br>⚓ Ankunft in <b>${n.name}</b> (${n.land}): ${when(n.arr,n.tz)} – ${inH(n.arr-t)}<br><span class="lbl">Dafür nötig: ca. ${Math.round(NM(st.km)/Math.max(.5,(n.arr-t)/36e5))} Knoten im Schnitt · Ungefähre Position: ${Math.abs(st.lat).toFixed(1)}° ${st.lat>=0?'N':'S'}, ${Math.abs(st.lon).toFixed(1)}° ${st.lon>=0?'O':'W'}</span></div>`}
+ box.innerHTML=h;renderProg(st,t);
  document.getElementById('maplbl').textContent=fixed?'Position zum gewählten Zeitpunkt (laut Plan)':'Ungefähre Position jetzt (laut Reiseplan)';
  document.querySelectorAll('tr.today').forEach(r=>r.classList.remove('today'));
  if(st.tz){const r=document.getElementById('d'+ymd(st.tz,now));if(r)r.classList.add('today')}
@@ -303,7 +327,7 @@ const ago=ms=>{const m=Math.round(ms/6e4);return m<2?'gerade eben':m<90?`vor ${m
 function box(title,sub,w,day,dayLbl,note,extra){let h=`<div class="pl">${title}</div>${sub?`<div class="lbl" style="font-size:13px">${sub}</div>`:''}`;
  if(w){const [ic,tx]=WMO(w.c);h+=`<div><span class="ico">${ic}</span> <span class="big">${w.t}°</span></div><div style="font-size:15px">${tx} · heute ${w.mn}° bis ${w.mx}°</div><div class="lbl" style="font-size:13px">${Date.now()-w.at<36e5*2?'live':'Stand '+ago(Date.now()-w.at)}</div>`}
  else if(day){const [ic,tx]=WMO(day.c);h+=`<div><span class="ico">${ic}</span> <span class="big">${day.mn}–${day.mx}°</span></div><div style="font-size:15px">${tx}</div><div class="lbl" style="font-size:13px">${dayLbl}</div>`}
- else h+=`<div class="lbl" style="font-size:15px;margin-top:6px">Noch keine Vorhersage gespeichert</div>`;
+ else h+=`<div class="lbl" style="font-size:15px;margin-top:6px">${fixed!==null?'Für dieses Datum gibt es (noch) keine Vorhersage – sie reicht max. 16 Tage voraus.':'Noch keine Vorhersage gespeichert – einmal mit Internet öffnen.'}</div>`;
  if(note&&!w&&!day)h+=`<div style="font-size:14px;margin-top:6px">📝 Laut Reiseplan-Notiz: ${note} °C</div>`;
  if(extra)h+=extra;return h}
 let wxBusy=false,FC=null;
@@ -316,7 +340,7 @@ async function weather(){if(wxBusy)return;wxBusy=true;
  let ship=null,note=null,sub='',pday=null,extra='';
  if(st.kind==='port'||st.kind==='sea'){ship={lat:st.lat,lon:st.lon};
   if(st.kind==='port'){sub=st.stop.name;note=NOTE[st.stop.key];pday=FC&&FC.ports[st.stop.key+'|'+ymd(st.stop.tz,now)]}
-  else{sub=`auf See (zwischen ${st.stop.name} und ${st.next.name})`;note=st.f>=.5?NOTE[st.next.key]:null}
+  else{sub=`auf See (zwischen ${st.stop.name} und ${st.next.name})`;note=st.f>=.5?NOTE[st.next.key]:null;pday=FC&&FC.sea&&FC.sea[ymd('UTC',now)]}
   // nächster Hafen
   const nx=st.kind==='sea'?st.next:S[st.i+1];
   if(nx&&nx.arr){const d=ymd(nx.tz,new Date(nx.arr)),f=FC&&FC.ports[nx.key+'|'+d];
