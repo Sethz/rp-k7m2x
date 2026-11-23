@@ -30,9 +30,12 @@ table{width:100%;border-collapse:collapse;background:var(--card);border-radius:1
 th{background:var(--acc);color:var(--bg);text-align:left;padding:8px;font-size:14px}td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
 tr.s td{background:var(--sea)}tr.today td{background:var(--hi)!important}.foot{font-size:13px;color:var(--mute);margin:14px 0 30px}
 #test{font-size:14px;margin-top:10px}#test input{font:inherit;padding:4px}
+.wx{display:flex;gap:12px}.wx>div{flex:1;background:var(--bg);border-radius:12px;padding:12px}
+.wx .big{font-size:30px;font-weight:700}.wx .ico{font-size:30px}.wx .pl{font-weight:600;font-size:15px}
 </style></head><body><main>
 <h1>🚢 Reiseplan</h1>
 <div class="card" id="now"><div class="where">Reiseplan: Bitte unten das heutige Datum suchen</div><div class="lbl">(Die automatische Anzeige braucht einen Browser mit JavaScript.)</div></div>
+<div class="card"><div class="lbl">🌤 Wetter</div><div class="wx" id="wx"></div><div class="lbl" id="wxnote" style="margin-top:8px;font-size:13px"></div></div>
 <div class="card"><div class="lbl" id="maplbl">Ungefähre Position laut Reiseplan</div>
 <svg id="map" viewBox="0 0 360 180"><g id="world"></g></svg>
 <div class="btns"><button class="alt" id="zoomBtn">Ganze Welt zeigen</button>
@@ -258,9 +261,40 @@ function render(){
 }
 const tin=document.getElementById('tin');
 tin.onchange=()=>{if(!tin.value)return;const [d,tm]=tin.value.split('T');const [Y_,M,D]=d.split('-').map(Number),[hh,mm]=tm.split(':').map(Number);
- let g=Date.UTC(Y_,M-1,D,hh,mm);for(let k=0;k<2;k++){g=Date.UTC(Y_,M-1,D,hh,mm)-offVie(new Date(g))}fixed=g;render()};
+ let g=Date.UTC(Y_,M-1,D,hh,mm);for(let k=0;k<2;k++){g=Date.UTC(Y_,M-1,D,hh,mm)-offVie(new Date(g))}fixed=g;render();weather()};
 function offVie(t){const f=new Intl.DateTimeFormat('en-US',{timeZone:VIE,hourCycle:'h23',year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'}).formatToParts(t);const g=k=>+f.find(x=>x.type==k).value;return Date.UTC(g('year'),g('month')-1,g('day'),g('hour'),g('minute'))-Math.floor(t/6e4)*6e4}
-document.getElementById('tnow').onclick=()=>{fixed=null;tin.value='';render()};
+document.getElementById('tnow').onclick=()=>{fixed=null;tin.value='';render();weather()};
+
+// ---------- Wetter ----------
+const NOTE={"Puntarenas":"27–30","Puerto Quetzal":"22–25","Puerto Vallarta":"22–28","San Diego":"10–19","Los Angeles":"9–20","San Francisco":"8–15","Honolulu":"21–25","Hilo":"23–28","Papeete":"21–28","Suva":"23–30 (Regenzeit)","Lifou":"23–30","Sydney":"20–27","Newcastle":"26–28","Cairns":"24–31","Rabaul":"27–32","Tokyo":"2–12","Kobe":"10–12","Nagasaki":"4–12","Busan":"−1–9","Keelung":"14–20","Hong Kong":"14–20","Nha Trang":"22–28","Phu My":"28–33","Ko Samui":"29–31","Singapore":"25–32","Port Klang":"30–32","Penang":"25–32","Colombo":"25–32","Male":"30–32","Port Louis":"24–30","Durban":"22–30","Port Elizabeth":"16–25","Cape Town":"17–27","Walvis Bay":"21–24","Mindelo":"18–25","Las Palmas":"16–25"};
+const WMO=c=>c==0?['☀️','sonnig']:c<=2?['🌤','leicht bewölkt']:c==3?['☁️','bewölkt']:c<=48?['🌫','Nebel']:c<=57?['🌦','Nieselregen']:c<=67?['🌧','Regen']:c<=77?['🌨','Schnee']:c<=82?['🌦','Regenschauer']:c<=86?['🌨','Schneeschauer']:['⛈','Gewitter'];
+function home(t){const d=ymd(VIE,new Date(t));return(d>='2026-12-23'&&d<='2027-01-06')?{name:'Lienz · Zettersfeld',sub:'Osttirol, ca. 1.800 m',lat:46.855,lon:12.79,elev:1800,tz:VIE}:{name:'Wien',sub:'',lat:48.21,lon:16.37,tz:VIE}}
+function store(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function load(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
+async function fetchWx(p){const u=`https://api.open-meteo.com/v1/forecast?latitude=${p.lat.toFixed(2)}&longitude=${p.lon.toFixed(2)}${p.elev?'&elevation='+p.elev:''}&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto`;
+ const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw 0;const j=await r.json();
+ return{t:Math.round(j.current.temperature_2m),c:j.current.weather_code,w:Math.round(j.current.wind_speed_10m),mx:Math.round(j.daily.temperature_2m_max[0]),mn:Math.round(j.daily.temperature_2m_min[0]),at:Date.now()}}
+const ago=ms=>{const m=Math.round(ms/6e4);return m<2?'gerade eben':m<90?`vor ${m} Min.`:m<2880?`vor ${Math.round(m/60)} Std.`:`vor ${Math.round(m/1440)} Tagen`};
+function box(title,sub,w,note){let h=`<div class="pl">${title}</div>${sub?`<div class="lbl" style="font-size:13px">${sub}</div>`:''}`;
+ if(w){const [ic,tx]=WMO(w.c);h+=`<div><span class="ico">${ic}</span> <span class="big">${w.t}°</span></div><div style="font-size:15px">${tx} · heute ${w.mn}° bis ${w.mx}°</div><div class="lbl" style="font-size:13px">${Date.now()-w.at<36e5*2?'live':'Stand '+ago(Date.now()-w.at)}</div>`}
+ else h+=`<div class="lbl" style="font-size:15px;margin-top:6px">Kein aktuelles Wetter (offline)</div>`;
+ if(note)h+=`<div style="font-size:14px;margin-top:6px">📝 Laut Reiseplan-Notiz: ${note} °C</div>`;return h}
+let wxBusy=false;
+async function weather(){if(wxBusy)return;wxBusy=true;
+ const t=fixed??Date.now(),st=state(t),hm_=home(t);
+ let ship=null,note=null,title='Bei den Eltern',sub='';
+ if(st.kind==='port'||st.kind==='sea'){ship={lat:st.lat,lon:st.lon};
+  if(st.kind==='port'){sub=st.stop.name;note=NOTE[st.stop.key]}else{sub=`auf See vor ${st.f<.5?st.stop.name:st.next.name}`;note=st.f>=.5?NOTE[st.next.key]:null}}
+ const kS='wx:ship:'+(ship?ship.lat.toFixed(0)+','+ship.lon.toFixed(0):''),kH='wx:'+hm_.name;
+ let ws=ship?load(kS):null,wh=load(kH);const live=fixed===null;
+ const paint=()=>{document.getElementById('wx').innerHTML=(ship?`<div>${box(title,sub,ws,note)}</div>`:'')+`<div>${box('Bei euch',hm_.name+(hm_.sub?' · '+hm_.sub:''),wh)}</div>`;
+  document.getElementById('wxnote').textContent=live?'Aktuelles Wetter nur mit Internet (Open-Meteo); ohne Internet wird der letzte Stand angezeigt.':'Beim ausprobierten Datum gibt es nur die Notiz-Werte, kein Wetter.'};
+ if(!live){ws=null;wh=null}
+ paint();
+ if(live&&navigator.onLine!==false){try{if(ship&&(!ws||Date.now()-ws.at>9e5)){ws=await fetchWx(ship);store(kS,ws)}}catch(e){}
+  try{if(!wh||Date.now()-wh.at>9e5){wh=await fetchWx(hm_);store(kH,wh)}}catch(e){}paint()}
+ wxBusy=false}
+
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
-render();setInterval(()=>{if(fixed===null)render()},30000);
+render();weather();setInterval(()=>{if(fixed===null)render()},30000);setInterval(()=>{if(fixed===null)weather()},6e5);window.addEventListener('online',weather);
 </script></body></html>
