@@ -1,8 +1,8 @@
 {
- "checked": "2026-11-27T15:34+00:00",
+ "checked": "2026-11-28T14:30+00:00",
  "source": "https://www.taoticket.com/en_AU/co/costa-cruises/croc/3/SVND8A03",
  "parsed_ports": 58,
  "result": "unverändert",
  "diffs": [],
- "check.log": "{'checked': '2026-11-27T15:34+00:00', 'source': 'https://www.taoticket.com/en_AU/co/costa-cruises/croc/3/SVND8A03', 'parsed_ports': 58, 'result': 'unverändert', 'diffs': []}\n"
+ "check.log": "{'checked': '2026-11-28T14:30+00:00', 'source': 'https://www.taoticket.com/en_AU/co/costa-cruises/croc/3/SVND8A03', 'parsed_ports': 58, 'result': 'unverändert', 'diffs': []}\n"
 }
